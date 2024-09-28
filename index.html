@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mohish's Signature</title>
+    <style>
+        .main {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+        }
+        .canvas {
+            border: 2px solid black;
+            width: 100%;
+            height: auto;
+            touch-action: none; /* Disable default touch actions on canvas */
+        }
+        .top, .bottom {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        .block, input, select, button {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        .top > .block {
+            margin: 10px 0;
+        }
+        .bottom > button {
+            margin: 10px 0;
+        }
+        .block > p {
+            margin: 10px 0;
+            width: 100%;
+            text-align: center;
+        }
+        @media (min-width: 640px) {
+            .main {
+                width: 60%;
+            }
+            .top, .bottom {
+                flex-direction: row;
+            }
+            .block {
+                width: 30%;
+            }
+            .bottom > button {
+                width: 30%;
+            }
+        }
+    </style>
+    <link rel="icon" href="Signature.png">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+</head>
+<body>
+    <div class="main">
+        <div class="top">
+            <div class="block">
+                <p>Text Color Picker</p>
+                <input class="form-control" type="color" id="colorpicker"/>
+            </div>
+            <div class="block">
+                <p>Background</p>
+                <input class="form-control" type="color" id="canvasColor"/>
+            </div>
+            <div class="block">
+                <p>Font size</p>
+                <select class="form-control" id="fontSize">
+                    <option value="5">5px</option>
+                    <option value="10">10px</option>
+                    <option value="20">20px</option>
+                    <option value="30">30px</option>
+                    <option value="40">40px</option>
+                    <option value="50">50px</option>
+                </select>
+            </div>
+        </div>
+        <canvas class="canvas" id="mycanvas" width="800" height="500"></canvas>
+        <div class="bottom">
+            <button type="button" class="btn btn-danger" id="clearButton">Clear</button>
+            <button type="button" class="btn btn-success" id="saveButton">Save & Download</button>
+            <button type="button" class="btn btn-warning" id="retrieveButton">Retrieve Saved Signature</button>
+        </div>
+    </div>
+    <script>
+        const canvas = document.getElementById('mycanvas');
+        const ctx = canvas.getContext('2d');
+        let painting = false;
+
+        const colorPicker = document.getElementById('colorpicker');
+        const canvasColor = document.getElementById('canvasColor');
+        const clearButton = document.getElementById('clearButton');
+        const saveButton = document.getElementById('saveButton');
+        const retrieveButton = document.getElementById('retrieveButton');
+        const fontSize = document.getElementById('fontSize');
+
+        // Function to get the correct position of touch/mouse relative to the canvas
+        function getTouchPos(canvasDom, touchEvent) {
+            const rect = canvasDom.getBoundingClientRect();
+            return {
+                x: touchEvent.touches[0].clientX - rect.left,
+                y: touchEvent.touches[0].clientY - rect.top
+            };
+        }
+
+        // Add event listeners for touch devices
+        canvas.addEventListener('touchstart', (event) => {
+            event.preventDefault(); // Prevent scrolling
+            const pos = getTouchPos(canvas, event);
+            painting = true;
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+        });
+
+        canvas.addEventListener('touchmove', (event) => {
+            event.preventDefault(); // Prevent scrolling
+            if (painting) {
+                const pos = getTouchPos(canvas, event);
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+            }
+        });
+
+        canvas.addEventListener('touchend', () => {
+            painting = false;
+            ctx.beginPath();
+        });
+
+        // Add event listeners for mouse events (for desktop)
+        canvas.addEventListener('mousedown', (event) => {
+            painting = true;
+            ctx.beginPath();
+            ctx.moveTo(event.offsetX, event.offsetY);
+        });
+
+        canvas.addEventListener('mousemove', (event) => {
+            if (painting) {
+                ctx.lineTo(event.offsetX, event.offsetY);
+                ctx.stroke();
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            painting = false;
+            ctx.beginPath();
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            painting = false;
+        });
+
+        fontSize.addEventListener('change', (event) => {
+            ctx.lineWidth = event.target.value;
+        });
+
+        colorPicker.addEventListener('change', (event) => {
+            ctx.strokeStyle = event.target.value;
+        });
+
+        canvasColor.addEventListener('change', (event) => {
+            canvas.style.backgroundColor = event.target.value;
+        });
+
+        clearButton.addEventListener('click', () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        });
+
+        saveButton.addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = 'signature.png';
+            link.href = canvas.toDataURL();
+            link.click();
+            localStorage.setItem('savedSignature', canvas.toDataURL());
+        });
+
+        retrieveButton.addEventListener('click', () => {
+            const dataURL = localStorage.getItem('savedSignature');
+            if (dataURL) {
+                const img = new Image();
+                img.src = dataURL;
+                img.onload = () => {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                };
+            } else {
+                alert('No saved signature found!');
+            }
+        });
+    </script>
+</body>
+</html>
